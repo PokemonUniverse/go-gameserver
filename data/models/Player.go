@@ -2,17 +2,27 @@ package models
 
 import (
 	pnet "github.com/PokemonUniverse/nonamelib/network"
+	"github.com/PokemonUniverse/nonamelib/log"
+	"github.com/PokemonUniverse/nonamelib/position"
 
 	"gameserver/data/netmsg"
 	"gameserver/game"
 	"gameserver/interfaces"
+	"gameserver/world"
 )
 
 type Player struct {
-	Name string
+	Creature // base
 
 	rxChan <-chan pnet.INetMessageReader
 	txChan chan<- pnet.INetMessageWriter
+}
+
+func NewPlayer() *Player {
+	p := &Player{}
+	p.Creature.init()
+	
+	return p
 }
 
 // Start ICreature
@@ -20,19 +30,58 @@ func (p *Player) GetCreatureType() interfaces.CreatureType {
 	return interfaces.CREATURE_TYPE_PLAYER
 }
 
-func (p *Player) GetUID() uint64 {
-	return 0
-}
-
-func (p *Player) GetName() string {
-	return ""
-}
-
 func (p *Player) LoadCharacterData() bool {
 	return true
 }
 
-func (p *Player) Walk() {
+func (p *Player) Walk(_from position.Position, _to position.Position, _teleported bool, _direction uint16) {
+	if _to == position.ZP {
+		// Position is reset, send position to client so it's synced
+		p.SetPosition(_from)
+		p.netSendCreatureMove(p, _from, _from, false)
+	} else {
+		// Call base function
+		p.Creature.Walk(_from, _to, _teleported, _direction)
+		
+		// Send new tiles to client
+		p.netSendMapData(_direction)
+	}
+}
+
+func (p *Player) OnCreatureMove(_creature interfaces.ICreature, _from position.Position, _to position.Position, _teleport bool) {
+	// Call base function
+	p.Creature.OnCreatureMove(_creature, _from, _to, _teleport)
+	
+	// Do nothing is creature is me
+	if p.GetUID() == _creature.GetUID() {
+		return
+	}
+	
+	canSeeFromPosition := p.CanSeePosition(_from)
+	canSeeToPosition := p.CanSeePosition(_to)
+	
+	if canSeeFromPosition && canSeeToPosition { 
+		// We can see both from and to positions, meaning the creature is moving inside the viewport
+		p.netSendCreatureMove(_creature, _from, _to, _teleport)
+	} else if canSeeFromPosition && !canSeeToPosition {
+		// We can see the from position but not the to positioin, meaning the creature is leaving our viewport
+		// Send CreatureMove message to client before removing the creature from the visible creatures list
+		p.netSendCreatureMove(_creature, _from, _to, _teleport)
+	
+		p.RemoveVisibleCreature(_creature)
+		_creature.RemoveVisibleCreature(p)
+	} else if !canSeeFromPosition && canSeeToPosition { 
+		// We can't see the from position but we can see the to position, meaning the creature is entering our viewport
+		// First add the creature to our visible creature list before sending the CreatureMove message to the client 
+		p.AddVisibleCreature(_creature)
+		_creature.AddVisibleCreature(p)
+		
+		p.netSendCreatureMove(_creature, _from, _to, _teleport)
+	} else {
+		// Somehow it's impossible to see the creature, may this ever happen somehow
+		p.RemoveVisibleCreature(_creature)
+		_creature.RemoveVisibleCreature(p)
+	}
 }
 
 // End ICreature
@@ -41,9 +90,7 @@ func (p *Player) GetPlayerId() int {
 	return 0
 }
 
-func (p *Player) DoSomething() {
-	game.AddCreature(nil)
-}
+// Start networking receive
 
 func (p *Player) SetNetworkChans(_rx <-chan pnet.INetMessageReader, _tx chan<- pnet.INetMessageWriter) {
 	p.rxChan = _rx
@@ -62,10 +109,68 @@ func (p *Player) netReceiveMessages() {
 		switch netmessage.GetHeader() {
 		case pnet.HEADER_WALK:
 			p.netHeaderWalk(netmessage.(*netmsg.WalkMessage))
+		default:
+			log.Warning("Player", "netReceiveMessages", "No handler for messages with header %d", netmessage.GetHeader())
 		}
 	}
 }
 
 func (p *Player) netHeaderWalk(_netmessage *netmsg.WalkMessage) {
 	game.OnPlayerMove(p, _netmessage.Direction)
+}
+
+// Start networking send
+
+func (p *Player) netSendCreatureMove(_creature interfaces.ICreature, _from position.Position, _to position.Position, _teleport bool) {
+	msg := netmsg.NewWalkMessage(_creature)
+	msg.From = _from
+	msg.To = _to
+	msg.Teleport = _teleport
+	
+	p.txChan<- msg
+}
+
+func (p *Player) netSendMapData(_direction uint16) {
+	xMin := 1
+	xMax := interfaces.CLIENT_VIEWPORT.X
+	yMin := 1
+	yMax := interfaces.CLIENT_VIEWPORT.Y
+	
+	if _direction != interfaces.DIR_NULL {
+		switch _direction {
+		case interfaces.DIR_NORTH:
+			yMax = 1
+		case interfaces.DIR_EAST:
+			xMin = interfaces.CLIENT_VIEWPORT.X
+		case interfaces.DIR_SOUTH:
+			yMin = interfaces.CLIENT_VIEWPORT.Y
+		case interfaces.DIR_WEST:
+			xMax = 1
+		}
+	}
+	
+	// Top-left coordinates
+	positionX 	:= (p.GetPosition().X - interfaces.CLIENT_VIEWPORT_CENTER.X)
+	positionY 	:= (p.GetPosition().Y - interfaces.CLIENT_VIEWPORT_CENTER.Y)
+	positionZ 	:= p.GetPosition().Z
+	mapId		:= p.GetPosition().MapId
+	
+	tilesMessage := netmsg.NewSendTilesMessage()
+	for x := xMin; x <= xMax; x++ {
+		for y := yMin; y <= yMax; y++ {
+			if tp, found := world.GetTilePoint(mapId, positionX + x, positionY + y); found {
+				if tp.HasLayer(positionZ) || tp.HasLayer(positionZ + 1) ||  tp.HasLayer(positionZ - 1) {
+					tilesMessage.AddTile(tp)
+				}
+			}
+		}
+		
+		if _direction == interfaces.DIR_NULL {
+			p.txChan <- tilesMessage
+		}
+	}
+	
+	if _direction != interfaces.DIR_NULL {
+		p.txChan <- tilesMessage
+	}
 }

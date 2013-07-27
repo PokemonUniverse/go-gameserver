@@ -16,6 +16,7 @@ type WalkMessage struct {
 	// Send
 	From pos.Position
 	To   pos.Position
+	Teleport bool
 }
 
 func NewWalkMessage(_creature interfaces.ICreature) *WalkMessage {

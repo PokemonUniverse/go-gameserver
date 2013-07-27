@@ -6,5 +6,5 @@ import (
 )
 
 func CreatePlayer() interfaces.IPlayer {
-	return &models.Player{}
+	return models.NewPlayer()
 }

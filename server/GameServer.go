@@ -118,7 +118,7 @@ func parseFirstMessage(_conn *websocket.Conn, _packet *pnet.Packet) {
 				connection.txChan <- firstMessage
 
 				// Add Player object to game
-				game.AddCreature(player)
+				game.AddPlayer(player)
 
 				return
 			}

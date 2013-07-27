@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/PokemonUniverse/nonamelib/log"
+	"github.com/PokemonUniverse/nonamelib/position"
 	"github.com/eaigner/hood"
 
 	"gameserver/data/entities"
@@ -117,6 +118,129 @@ func GetTilePoint(_mapid, _x, _y int) (*TilePoint, bool) {
 	}
 
 	return nil, false
+}
+
+func GetTilePointLayer(_mapId, _x, _y, _level int) (*TilePointLayer, ReturnValue) {
+	tp, foundTp := GetTilePoint(_mapId, _x, _y)
+	if !foundTp {
+		return nil, RET_TILEPOINT_NOTFOUND
+	}
+	
+	tpl, foundTpl := tp.GetTilePointLayer(_level)
+	if !foundTpl {
+		return nil, RET_TILEPOINTLAYER_NOTFOUND
+	}
+	
+	return tpl, RET_NOERROR
+}
+
+func GetVisibleCreaturesInDirection(_mapId, _x, _y, _level int, _direction uint16) interfaces.CreatureMap {
+	var startX, startY, endX, endY, levelMin, levelMax int
+	creatureMap := make(interfaces.CreatureMap)
+	
+	startX = (_x - interfaces.CLIENT_VIEWPORT_CENTER.X)
+	startY = (_y - interfaces.CLIENT_VIEWPORT_CENTER.Y)
+	endX = (_x + interfaces.CLIENT_VIEWPORT_CENTER.X)
+	endY = (_y + interfaces.CLIENT_VIEWPORT_CENTER.Y)
+	levelMin = _level - 1
+	levelMax = _level + 1
+	
+	if _direction == interfaces.DIR_NORTH {
+		if startY > 0 {
+			startY += 1
+		} else {
+			startY -= 1
+		}
+		endY = startY
+	} else if _direction == interfaces.DIR_SOUTH {
+		if endY > 0 {
+			endY += 1
+		} else {
+			endY -= 1
+		}
+		startY = endY
+	} else if _direction == interfaces.DIR_EAST {
+		if endX > 0 {
+			endX += 1
+		} else {
+			endX -= 1
+		}
+		startX = endX
+	} else if _direction == interfaces.DIR_WEST {
+		if startX > 0 {
+			startX += 1
+		} else {
+			startX -= 1
+		}
+		endX = startX
+	}
+	
+	if levelMin < -5 {
+		levelMin = -5
+	} else if levelMax > 5 {
+		levelMax = 5
+	}
+	
+	for x := startX; x <= endX; x++ {
+		for y := startY; y <= endY; y++ {
+			if tp, tpOk := GetTilePoint(_mapId, x, y); tpOk {
+				// Loop levels
+				for level := levelMin; level <= levelMax; level++ {
+					if tpl, tplOk := tp.GetTilePointLayer(level); tplOk && len(tpl.creatures) > 0 {
+						tpl.creaturesMutex.RLock()
+						
+						for k, v := range(tpl.creatures) {
+							creatureMap[k] = v
+						}
+					
+						tpl.creaturesMutex.RUnlock()
+					}
+				}
+			}
+		}
+	}
+	
+	return creatureMap
+}
+
+func GetVisibleCreaturesFromPosition(_position position.Position) interfaces.CreatureMap {
+	var startX, startY, endX, endY, levelMin, levelMax, mapId int
+	creatureMap := make(interfaces.CreatureMap)
+	
+	startX = (_position.X - interfaces.CLIENT_VIEWPORT_CENTER.X)
+	startY = (_position.Y - interfaces.CLIENT_VIEWPORT_CENTER.Y)
+	endX = (_position.X + interfaces.CLIENT_VIEWPORT_CENTER.X)
+	endY = (_position.Y + interfaces.CLIENT_VIEWPORT_CENTER.Y)
+	levelMin = _position.Z - 1
+	levelMax = _position.Z + 1
+	mapId = _position.MapId
+	
+	if levelMin < -5 {
+		levelMin = -5
+	} else if levelMax > 5 {
+		levelMax = 5
+	}
+	
+	for x := startX; x <= endX; x++ {
+		for y := startY; y <= endY; y++ {
+			if tp, tpOk := GetTilePoint(mapId, x, y); tpOk {
+				// Loop levels
+				for level := levelMin; level <= levelMax; level++ {
+					if tpl, tplOk := tp.GetTilePointLayer(level); tplOk && len(tpl.creatures) > 0 {
+						tpl.creaturesMutex.RLock()
+						
+						for k, v := range(tpl.creatures) {
+							creatureMap[k] = v
+						}
+					
+						tpl.creaturesMutex.RUnlock()
+					}
+				}
+			}
+		}
+	}
+	
+	return creatureMap
 }
 
 // Waits for all spawned process routines to finish

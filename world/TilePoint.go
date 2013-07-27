@@ -25,6 +25,19 @@ func (t *TilePoint) GetY() int {
 	return t.y
 }
 
+func (t *TilePoint) GetIndex() int64 {
+	return t.index
+}
+
+func (t *TilePoint) GetTilePointLayers() map[int]*TilePointLayer {
+	return t.tilePointLayers
+}
+
+func (t *TilePoint) HasLayer(_layer int) bool {
+	_, found := t.tilePointLayers[_layer]
+	return found
+}
+
 // Gets a TilePointLayer from layer index
 // Returns:	TilePointLayer object
 //			Bool, true if the TilePointLayer was found, otherwise false

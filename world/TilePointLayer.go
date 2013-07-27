@@ -1,6 +1,8 @@
 package world
 
 import (
+	"sync"
+	
 	"gameserver/interfaces"
 )
 
@@ -8,7 +10,8 @@ type TilePointLayer struct {
 	tilePointTileLayers map[int]*TilePointTileLayer
 
 	// List of creatures whom are active on this TilePointLayer
-	creatures map[uint64]interfaces.ICreature
+	creatures interfaces.CreatureMap
+	creaturesMutex sync.RWMutex
 
 	blocking interfaces.TileBlocking
 	layer    int
@@ -16,13 +19,21 @@ type TilePointLayer struct {
 
 func NewTilePointLayer(_layer int) *TilePointLayer {
 	return &TilePointLayer{tilePointTileLayers: make(map[int]*TilePointTileLayer),
-		creatures: make(map[uint64]interfaces.ICreature),
+		creatures: make(interfaces.CreatureMap),
 		layer:     _layer,
-		blocking:  interfaces.TILEBLOCK_BLOCK}
+		blocking:  interfaces.TILEBLOCK_BLOCK }
+}
+
+func (t *TilePointLayer) GetBlocking() interfaces.TileBlocking {
+	return t.blocking
 }
 
 func (t *TilePointLayer) SetBlocking(_blocking interfaces.TileBlocking) {
 	t.blocking = _blocking
+}
+
+func (t *TilePointLayer) GetTilePointTileLayers() map[int]*TilePointTileLayer {
+	return t.tilePointTileLayers
 }
 
 // Gets a TilePointTileLayer using layer index.
@@ -31,6 +42,55 @@ func (t *TilePointLayer) SetBlocking(_blocking interfaces.TileBlocking) {
 func (t *TilePointLayer) GetTilePointTileLayer(_layer int) (*TilePointTileLayer, bool) {
 	tptl, found := t.tilePointTileLayers[_layer]
 	return tptl, found
+}
+
+func (t *TilePointLayer) AddCreature(_creature interfaces.ICreature, _checkEvents bool) ReturnValue {
+	ret := RET_NOERROR
+
+	/*if _checkEvents && t.Events.Len() > 0 {
+		for e := t.events.Front(); e != nil; e = e.Next() {
+			event, valid := e.Value.(pulogic.ITileEvent)
+			if valid {
+				ret = event.OnCreatureEnter(_creature, ret)
+			}
+
+			if ret == RET_NOTPOSSIBLE {
+				return
+			}
+		}
+	}*/
+
+	t.creaturesMutex.Lock()
+	defer t.creaturesMutex.Unlock()
+	_, found := t.creatures[_creature.GetUID()]
+	if !found {
+		t.creatures[_creature.GetUID()] = _creature
+	}
+
+	return ret
+}
+
+func (t *TilePointLayer) RemoveCreature(_creature interfaces.ICreature, _checkEvents bool) ReturnValue {
+	ret := RET_NOERROR
+	
+	/*if _checkEvents && t.Events.Len() > 0 {
+		for e := t.Events.Front(); e != nil; e = e.Next() {
+			event, valid := e.Value.(pulogic.ITileEvent)
+			if valid {
+				ret = event.OnCreatureLeave(_creature, ret)
+			}
+
+			if ret == RET_NOTPOSSIBLE {
+				return
+			}
+		}
+	}*/
+
+	t.creaturesMutex.Lock()
+	defer t.creaturesMutex.Unlock()
+	delete(t.creatures, _creature.GetUID())
+	
+	return ret
 }
 
 // Gets a TilePointTileLayer using layer index. If the TilePointTileLayer doesn't exists it will be created.
