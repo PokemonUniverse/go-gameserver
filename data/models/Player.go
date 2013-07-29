@@ -84,6 +84,17 @@ func (p *Player) OnCreatureMove(_creature interfaces.ICreature, _from position.P
 	}
 }
 
+func (p *Player) OnCreatureTurn(_creature interfaces.ICreature) {
+	p.Creature.OnCreatureTurn(_creature)
+	
+	// Do nothing is creature is me
+	if p.GetUID() == _creature.GetUID() {
+		return
+	}
+	
+	p.netSendCreatureTurn(_creature)
+}
+
 // End ICreature
 
 func (p *Player) GetPlayerId() int {
@@ -109,6 +120,8 @@ func (p *Player) netReceiveMessages() {
 		switch netmessage.GetHeader() {
 		case pnet.HEADER_WALK:
 			p.netHeaderWalk(netmessage.(*netmsg.WalkMessage))
+		case pnet.HEADER_TURN:
+			p.netHeaderTurn(netmessage.(*netmsg.TurnMessage))
 		default:
 			log.Warning("Player", "netReceiveMessages", "No handler for messages with header %d", netmessage.GetHeader())
 		}
@@ -119,6 +132,10 @@ func (p *Player) netHeaderWalk(_netmessage *netmsg.WalkMessage) {
 	game.OnPlayerMove(p, _netmessage.Direction)
 }
 
+func (p *Player) netHeaderTurn(_netmessage *netmsg.TurnMessage) {
+	game.OnCreatureTurn(p, _netmessage.Direction)
+}
+
 // Start networking send
 
 func (p *Player) netSendCreatureMove(_creature interfaces.ICreature, _from position.Position, _to position.Position, _teleport bool) {
@@ -126,6 +143,13 @@ func (p *Player) netSendCreatureMove(_creature interfaces.ICreature, _from posit
 	msg.From = _from
 	msg.To = _to
 	msg.Teleport = _teleport
+	
+	p.txChan<- msg
+}
+
+func (p *Player) netSendCreatureTurn(_creature interfaces.ICreature) {
+	msg := netmsg.NewTurnMessage(_creature)
+	msg.AddDirection(_creature.GetDirection())
 	
 	p.txChan<- msg
 }

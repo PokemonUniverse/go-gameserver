@@ -9,6 +9,7 @@ import (
 )
 
 type Creature struct {
+	direction	uint16
 	position	position.Position
 	
 	Name		string
@@ -55,6 +56,10 @@ func (c *Creature) SetPosition(_position position.Position) {
 	c.position = _position
 }
 
+func (c *Creature) GetDirection() uint16 {
+	return c.direction
+}
+
 func (c *Creature) CanMove() bool {
 	return (c.getTimeSinceLastMove() >= c.movementSpeed)
 }
@@ -63,8 +68,21 @@ func (c *Creature) Walk(_from position.Position, _to position.Position, _telepor
 	c.visibleCreaturesMutex.RLock()
 	defer c.visibleCreaturesMutex.RUnlock()
 	
+	c.direction = _direction
+	
 	for _, creature := range(c.visibleCreatures) {
 		creature.OnCreatureMove(c, _from, _to, _teleported)
+	}
+}
+
+func (c *Creature) Turn(_direction uint16) {
+	c.visibleCreaturesMutex.RLock()
+	defer c.visibleCreaturesMutex.RUnlock()
+	
+	c.direction = _direction
+	
+	for _, creature := range(c.visibleCreatures) {
+		creature.OnCreatureTurn(c)
 	}
 }
 

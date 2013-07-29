@@ -34,6 +34,12 @@ func OnPlayerMove(_player interfaces.IPlayer, _direction uint16) {
 	}
 }
 
+func OnCreatureTurn(_creature interfaces.ICreature, _direction uint16) {
+	if _direction != _creature.GetDirection() {
+		_creature.Turn(_direction)
+	}
+}
+
 /***********************
 	Private Methods 
 ************************/

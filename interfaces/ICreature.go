@@ -14,11 +14,13 @@ type ICreature interface {
 	GetMapId() int
 	GetPosition() position.Position
 	SetPosition(_position position.Position)
+	GetDirection() uint16
 
 	LoadCharacterData() bool
 
 	CanMove() bool
 	Walk(_from position.Position, _to position.Position, _teleported bool, _direction uint16)
+	Turn(_direction uint16)
 	
 	// Methods for all moving creatures
 	OnCreatureMove(_creature ICreature, _from position.Position, _to position.Position, _teleport bool)
