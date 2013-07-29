@@ -95,6 +95,26 @@ func (p *Player) OnCreatureTurn(_creature interfaces.ICreature) {
 	p.netSendCreatureTurn(_creature)
 }
 
+func (p *Player) AddVisibleCreature(_creature interfaces.ICreature) bool {
+	ret := p.Creature.AddVisibleCreature(_creature)
+	
+	if ret {
+		p.netSendCreatureAdd(_creature)
+	}
+	
+	return ret
+}
+
+func (p *Player) RemoveVisibleCreature(_creature interfaces.ICreature) bool {
+	ret := p.Creature.RemoveVisibleCreature(_creature)
+	
+	if ret {
+		p.netSendCreatureRemove(_creature)
+	}
+	
+	return ret
+}
+
 // End ICreature
 
 func (p *Player) GetPlayerId() int {
@@ -197,4 +217,14 @@ func (p *Player) netSendMapData(_direction uint16) {
 	if _direction != interfaces.DIR_NULL {
 		p.txChan <- tilesMessage
 	}
+}
+
+func (p *Player) netSendCreatureAdd(_creature interfaces.ICreature) {
+	msg := netmsg.NewCreatureAddMessage(_creature)
+	p.txChan<- msg
+}
+
+func (p *Player) netSendCreatureRemove(_creature interfaces.ICreature) {
+	msg := netmsg.NewCreatureRemoveMessage(_creature)
+	p.txChan<- msg	
 }
