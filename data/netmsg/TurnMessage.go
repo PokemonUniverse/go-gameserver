@@ -2,17 +2,17 @@ package netmsg
 
 import (
 	pnet "github.com/PokemonUniverse/nonamelib/network"
-	
+
 	"gameserver/interfaces"
 )
 
 type TurnMessage struct {
-	Creature interfaces.ICreature
+	Creature  interfaces.ICreature
 	Direction uint16
 }
 
 func NewTurnMessage(_creature interfaces.ICreature) *TurnMessage {
-	return &TurnMessage { Creature: _creature }
+	return &TurnMessage{Creature: _creature}
 }
 
 // GetHeader returns the header value of this message
@@ -30,7 +30,7 @@ func (m *TurnMessage) ReadPacket(_packet pnet.IPacket) error {
 		return err
 	}
 	m.Direction = direction
-	
+
 	return nil
 }
 
@@ -39,6 +39,6 @@ func (m *TurnMessage) WritePacket() pnet.IPacket {
 	packet := pnet.NewPacketExt(m.GetHeader())
 	packet.AddUint64(m.Creature.GetUID())
 	packet.AddUint16(m.Direction)
-	
+
 	return packet
 }

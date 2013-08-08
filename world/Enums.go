@@ -1,6 +1,7 @@
 package world
 
 type ReturnValue int
+
 const (
 	RET_NOERROR ReturnValue = iota
 	RET_NOTPOSSIBLE

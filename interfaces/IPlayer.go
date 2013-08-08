@@ -6,9 +6,9 @@ import (
 
 type IPlayer interface {
 	ICreature
-	
+
 	// Generic
-	GetPlayerId() int
+	GetPlayerId() int64
 
 	// Networking
 	SetNetworkChans(_rx <-chan pnet.INetMessageReader, _tx chan<- pnet.INetMessageWriter)

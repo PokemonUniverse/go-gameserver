@@ -2,7 +2,7 @@ package netmsg
 
 import (
 	pnet "github.com/PokemonUniverse/nonamelib/network"
-	
+
 	"gameserver/interfaces"
 )
 
@@ -11,7 +11,7 @@ type CreatureRemoveMessage struct {
 }
 
 func NewCreatureRemoveMessage(_creature interfaces.ICreature) *CreatureRemoveMessage {
-	return &CreatureRemoveMessage { Creature: _creature }
+	return &CreatureRemoveMessage{Creature: _creature}
 }
 
 // GetHeader returns the header value of this message
@@ -23,6 +23,6 @@ func (m *CreatureRemoveMessage) GetHeader() uint8 {
 func (m *CreatureRemoveMessage) WritePacket() pnet.IPacket {
 	packet := pnet.NewPacketExt(m.GetHeader())
 	packet.AddUint64(m.Creature.GetUID())
-	
+
 	return packet
 }

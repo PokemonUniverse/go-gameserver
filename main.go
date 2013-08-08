@@ -12,6 +12,7 @@ import (
 	"github.com/PokemonUniverse/nonamelib/log"
 
 	"gameserver/config"
+	"gameserver/data/pokemon"
 	"gameserver/server"
 	"gameserver/world"
 )
@@ -33,8 +34,11 @@ func main() {
 	// TODO: Read configuration file
 	readConfiguration()
 
-	// TODO: Initialize database connection
+	// Initialize database connection
 	initializeDatabase()
+
+	// Load all Pokemon data from database
+	loadPokemonData()
 
 	// Load tilepoints from database
 	loadWorldmap()
@@ -89,6 +93,10 @@ func initializeDatabase() {
 	mainDatabase = hd
 
 	log.Info("main", "initializeDatabase", "Database connection initialized: %s", connectionString)
+}
+
+func loadPokemonData() {
+	pokemon.Load(mainDatabase)
 }
 
 func loadWorldmap() {

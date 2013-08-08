@@ -125,26 +125,26 @@ func GetTilePointLayer(_mapId, _x, _y, _level int) (*TilePointLayer, ReturnValue
 	if !foundTp {
 		return nil, RET_TILEPOINT_NOTFOUND
 	}
-	
+
 	tpl, foundTpl := tp.GetTilePointLayer(_level)
 	if !foundTpl {
 		return nil, RET_TILEPOINTLAYER_NOTFOUND
 	}
-	
+
 	return tpl, RET_NOERROR
 }
 
 func GetVisibleCreaturesInDirection(_mapId, _x, _y, _level int, _direction uint16) interfaces.CreatureMap {
 	var startX, startY, endX, endY, levelMin, levelMax int
 	creatureMap := make(interfaces.CreatureMap)
-	
+
 	startX = (_x - interfaces.CLIENT_VIEWPORT_CENTER.X)
 	startY = (_y - interfaces.CLIENT_VIEWPORT_CENTER.Y)
 	endX = (_x + interfaces.CLIENT_VIEWPORT_CENTER.X)
 	endY = (_y + interfaces.CLIENT_VIEWPORT_CENTER.Y)
 	levelMin = _level - 1
 	levelMax = _level + 1
-	
+
 	if _direction == interfaces.DIR_NORTH {
 		if startY > 0 {
 			startY += 1
@@ -174,13 +174,13 @@ func GetVisibleCreaturesInDirection(_mapId, _x, _y, _level int, _direction uint1
 		}
 		endX = startX
 	}
-	
+
 	if levelMin < -5 {
 		levelMin = -5
 	} else if levelMax > 5 {
 		levelMax = 5
 	}
-	
+
 	for x := startX; x <= endX; x++ {
 		for y := startY; y <= endY; y++ {
 			if tp, tpOk := GetTilePoint(_mapId, x, y); tpOk {
@@ -188,25 +188,25 @@ func GetVisibleCreaturesInDirection(_mapId, _x, _y, _level int, _direction uint1
 				for level := levelMin; level <= levelMax; level++ {
 					if tpl, tplOk := tp.GetTilePointLayer(level); tplOk && len(tpl.creatures) > 0 {
 						tpl.creaturesMutex.RLock()
-						
-						for k, v := range(tpl.creatures) {
+
+						for k, v := range tpl.creatures {
 							creatureMap[k] = v
 						}
-					
+
 						tpl.creaturesMutex.RUnlock()
 					}
 				}
 			}
 		}
 	}
-	
+
 	return creatureMap
 }
 
 func GetVisibleCreaturesFromPosition(_position position.Position) interfaces.CreatureMap {
 	var startX, startY, endX, endY, levelMin, levelMax, mapId int
 	creatureMap := make(interfaces.CreatureMap)
-	
+
 	startX = (_position.X - interfaces.CLIENT_VIEWPORT_CENTER.X)
 	startY = (_position.Y - interfaces.CLIENT_VIEWPORT_CENTER.Y)
 	endX = (_position.X + interfaces.CLIENT_VIEWPORT_CENTER.X)
@@ -214,13 +214,13 @@ func GetVisibleCreaturesFromPosition(_position position.Position) interfaces.Cre
 	levelMin = _position.Z - 1
 	levelMax = _position.Z + 1
 	mapId = _position.MapId
-	
+
 	if levelMin < -5 {
 		levelMin = -5
 	} else if levelMax > 5 {
 		levelMax = 5
 	}
-	
+
 	for x := startX; x <= endX; x++ {
 		for y := startY; y <= endY; y++ {
 			if tp, tpOk := GetTilePoint(mapId, x, y); tpOk {
@@ -228,18 +228,18 @@ func GetVisibleCreaturesFromPosition(_position position.Position) interfaces.Cre
 				for level := levelMin; level <= levelMax; level++ {
 					if tpl, tplOk := tp.GetTilePointLayer(level); tplOk && len(tpl.creatures) > 0 {
 						tpl.creaturesMutex.RLock()
-						
-						for k, v := range(tpl.creatures) {
+
+						for k, v := range tpl.creatures {
 							creatureMap[k] = v
 						}
-					
+
 						tpl.creaturesMutex.RUnlock()
 					}
 				}
 			}
 		}
 	}
-	
+
 	return creatureMap
 }
 

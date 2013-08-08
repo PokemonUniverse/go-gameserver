@@ -11,6 +11,8 @@ type Player struct {
 	Password string `sql:"size(255),notnull"`
 	Salt     string `sql:"size(255),notnull"`
 
+	Money int32
+
 	Created hood.Created
 	Updated hood.Updated
 }

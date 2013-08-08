@@ -2,28 +2,28 @@ package models
 
 import (
 	"sync"
-	
+
 	"github.com/PokemonUniverse/nonamelib/position"
-	
+
 	"gameserver/interfaces"
 )
 
 type Creature struct {
-	direction	uint16
-	position	position.Position
-	
-	Name		string
-	
-	movementSpeed	int
-	lastStep		int64
-	
-	visibleCreatures interfaces.CreatureMap
+	direction uint16
+	position  position.Position
+
+	Name string
+
+	movementSpeed int
+	lastStep      int64
+
+	visibleCreatures      interfaces.CreatureMap
 	visibleCreaturesMutex sync.RWMutex
 }
 
 func (c *Creature) init() {
 	c.visibleCreatures = make(interfaces.CreatureMap)
-	
+
 	c.movementSpeed = 250
 	c.lastStep = interfaces.PUSYS_TIME()
 }
@@ -67,10 +67,10 @@ func (c *Creature) CanMove() bool {
 func (c *Creature) Walk(_from position.Position, _to position.Position, _teleported bool, _direction uint16) {
 	c.visibleCreaturesMutex.RLock()
 	defer c.visibleCreaturesMutex.RUnlock()
-	
+
 	c.direction = _direction
-	
-	for _, creature := range(c.visibleCreatures) {
+
+	for _, creature := range c.visibleCreatures {
 		creature.OnCreatureMove(c, _from, _to, _teleported)
 	}
 }
@@ -78,10 +78,10 @@ func (c *Creature) Walk(_from position.Position, _to position.Position, _telepor
 func (c *Creature) Turn(_direction uint16) {
 	c.visibleCreaturesMutex.RLock()
 	defer c.visibleCreaturesMutex.RUnlock()
-	
+
 	c.direction = _direction
-	
-	for _, creature := range(c.visibleCreatures) {
+
+	for _, creature := range c.visibleCreatures {
 		creature.OnCreatureTurn(c)
 	}
 }
@@ -104,30 +104,30 @@ func (c *Creature) OnCreatureDisappear(_creature interfaces.ICreature, _isLogout
 
 // Methods for all creatures who need to see other creatures	
 func (c *Creature) AddVisibleCreature(_creature interfaces.ICreature) bool {
-	if _creature.GetUID() != c.GetUID()	{
+	if _creature.GetUID() != c.GetUID() {
 		c.visibleCreaturesMutex.Lock()
 		defer c.visibleCreaturesMutex.Unlock()
-	
+
 		if _, found := c.visibleCreatures[_creature.GetUID()]; !found {
 			c.visibleCreatures[_creature.GetUID()] = _creature
-			
+
 			return true
 		}
 	}
-	
+
 	return false
 }
 
 func (c *Creature) RemoveVisibleCreature(_creature interfaces.ICreature) bool {
-	if _creature.GetUID() != c.GetUID()	{
+	if _creature.GetUID() != c.GetUID() {
 		c.visibleCreaturesMutex.Lock()
 		defer c.visibleCreaturesMutex.Unlock()
-	
+
 		delete(c.visibleCreatures, _creature.GetUID())
-		
+
 		return true
 	}
-	
+
 	return false
 }
 

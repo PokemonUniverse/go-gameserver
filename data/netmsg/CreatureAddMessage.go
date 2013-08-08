@@ -2,7 +2,7 @@ package netmsg
 
 import (
 	pnet "github.com/PokemonUniverse/nonamelib/network"
-	
+
 	"gameserver/interfaces"
 )
 
@@ -11,7 +11,7 @@ type CreatureAddMessage struct {
 }
 
 func NewCreatureAddMessage(_creature interfaces.ICreature) *CreatureAddMessage {
-	return &CreatureAddMessage { Creature: _creature }
+	return &CreatureAddMessage{Creature: _creature}
 }
 
 // GetHeader returns the header value of this message
@@ -27,7 +27,7 @@ func (m *CreatureAddMessage) WritePacket() pnet.IPacket {
 	packet.AddUint16(uint16(m.Creature.GetPosition().X))
 	packet.AddUint16(uint16(m.Creature.GetPosition().Y))
 	packet.AddUint16(m.Creature.GetDirection())
-	
+
 	// Outfit
 	/*packet.AddUint8(uint8(m.Creature.GetOutfit().GetOutfitStyle(pul.OUTFIT_UPPER)))
 	packet.AddUint32(uint32(m.Creature.GetOutfit().GetOutfitColour(pul.OUTFIT_UPPER)))
@@ -41,6 +41,6 @@ func (m *CreatureAddMessage) WritePacket() pnet.IPacket {
 	packet.AddUint32(uint32(m.Creature.GetOutfit().GetOutfitColour(pul.OUTFIT_FEET)))
 	packet.AddUint8(uint8(m.Creature.GetOutfit().GetOutfitStyle(pul.OUTFIT_LOWER)))
 	packet.AddUint32(uint32(m.Creature.GetOutfit().GetOutfitColour(pul.OUTFIT_LOWER)))*/
-	
+
 	return packet
 }

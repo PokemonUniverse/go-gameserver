@@ -2,7 +2,7 @@ package netmsg
 
 import (
 	pnet "github.com/PokemonUniverse/nonamelib/network"
-	
+
 	"gameserver/world"
 )
 
@@ -28,45 +28,45 @@ func (m *SendTilesMessage) WritePacket() pnet.IPacket {
 	totalTiles := uint16(len(m.tiles))
 	packet := pnet.NewPacketExt(m.GetHeader())
 	packet.AddUint16(totalTiles)
-	
+
 	if totalTiles == 0 {
 		return packet
 	}
-	
+
 	for _, tile := range m.tiles {
 		if tile == nil {
 			continue
 		}
-		
+
 		packet.AddUint16(uint16(tile.GetX()))
 		packet.AddUint16(uint16(tile.GetY()))
-		
+
 		// Loop TilePointLayers
 		tilePointLayers := tile.GetTilePointLayers()
 		packet.AddUint16(uint16(len(tilePointLayers)))
-		for level, tilePointLayer := range(tilePointLayers) {
+		for level, tilePointLayer := range tilePointLayers {
 			if tilePointLayer == nil {
 				continue
 			}
-			
+
 			packet.AddUint8(uint8(level))
 			packet.AddUint16(uint16(tilePointLayer.GetBlocking()))
-			
+
 			// Loop TilePointTileLayers
 			tilePointTileLayers := tilePointLayer.GetTilePointTileLayers()
 			packet.AddUint16(uint16(len(tilePointTileLayers)))
-			for layer, tilePointTileLayer := range(tilePointTileLayers) {
+			for layer, tilePointTileLayer := range tilePointTileLayers {
 				if tilePointTileLayer == nil {
 					continue
 				}
-				
+
 				packet.AddUint8(uint8(layer))
 				packet.AddString(tilePointTileLayer.GetTileId())
 			}
 		}
 	}
-	
-	m.tiles = make(map[int64]*world.TilePoint) 
-	
-	return packet	
+
+	m.tiles = make(map[int64]*world.TilePoint)
+
+	return packet
 }

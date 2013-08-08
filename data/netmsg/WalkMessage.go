@@ -14,8 +14,8 @@ type WalkMessage struct {
 	SendMap   bool
 
 	// Send
-	From pos.Position
-	To   pos.Position
+	From     pos.Position
+	To       pos.Position
 	Teleport bool
 }
 
