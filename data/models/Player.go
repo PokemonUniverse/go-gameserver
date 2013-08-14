@@ -1,6 +1,8 @@
 package models
 
 import (
+	"github.com/eaigner/hood"
+
 	"github.com/PokemonUniverse/nonamelib/log"
 	pnet "github.com/PokemonUniverse/nonamelib/network"
 	"github.com/PokemonUniverse/nonamelib/position"
@@ -14,20 +16,21 @@ import (
 
 type Player struct {
 	Creature // base
-
 	PlayerEntity *entities.Player
-
+	
+	dbConn *hood.Hood
 	rxChan <-chan pnet.INetMessageReader
 	txChan chan<- pnet.INetMessageWriter
 
 	pokemon map[int64]*PlayerPokemon
 }
 
-func NewPlayer(_entity *entities.Player) *Player {
+func NewPlayer(_entity *entities.Player, _dbConn *hood.Hood) *Player {
 	p := &Player{}
 	p.Creature.init()
 	p.PlayerEntity = _entity
 	p.Creature.Name = _entity.Name
+	p.dbConn = _dbConn
 
 	p.pokemon = make(map[int64]*PlayerPokemon)
 
@@ -40,6 +43,10 @@ func (p *Player) GetCreatureType() interfaces.CreatureType {
 }
 
 func (p *Player) LoadCharacterData() bool {
+	if p.loadPlayerPokemon() == false {
+		return false
+	}
+
 	return true
 }
 
@@ -124,7 +131,26 @@ func (p *Player) RemoveVisibleCreature(_creature interfaces.ICreature) bool {
 	return ret
 }
 
-// End ICreature
+// Player data loading
+func (p *Player) loadPlayerPokemon() bool {
+	var result []*entities.PlayerPokemon
+	if err := p.dbConn.Where("PlayerId", "=", p.GetPlayerId()).Find(result); err != nil {
+		log.Error("Player", "laodPlayerPokemon", "Failed to load pokemon for player (%d). %s", p.GetPlayerId(), err.Error())
+		return false
+	}
+	
+	p.pokemon = make(map[int64]*PlayerPokemon)
+	for _, playerPokemonEntity := range(result) {
+		playerPokemon := NewPlayerPokemon(p.dbConn, playerPokemonEntity)
+		p.pokemon[playerPokemon.GetPlayerPokemonId()] = playerPokemon
+	}
+	
+	// TODO: Maybe add extra check if pokemonList size is zero. But only if we assign a pokemon to the player when creating a character
+	
+	return true
+}
+
+// Player specific methods
 
 func (p *Player) GetPlayerId() int64 {
 	return int64(p.PlayerEntity.PlayerId)
@@ -134,7 +160,7 @@ func (p *Player) GetMoney() int32 {
 	return p.PlayerEntity.Money
 }
 
-// Start networking receive
+// Networking - Receive
 
 func (p *Player) SetNetworkChans(_rx <-chan pnet.INetMessageReader, _tx chan<- pnet.INetMessageWriter) {
 	p.rxChan = _rx
@@ -171,7 +197,7 @@ func (p *Player) netHeaderTurn(_netmessage *netmsg.TurnMessage) {
 	game.OnCreatureTurn(p, _netmessage.Direction)
 }
 
-// Start networking send
+// Networking - Send
 
 func (p *Player) netSendPlayerData() {
 	playerData := &netmsg.SendPlayerData{}
