@@ -20,11 +20,11 @@ func init() {
 
 func (ph *playerHelper) ConvertPlayerEntityToModel(_entity *entities.Player) (*models.Player, error) {
 	dbConn := CreateDatabaseConnection()
-	
+
 	if dbConn == nil {
 		return nil, fmt.Errorf("Could not create database connection for player '%s'", _entity.Name)
 	}
-	
+
 	p := models.NewPlayer(_entity, dbConn)
 	p.Name = _entity.Name
 

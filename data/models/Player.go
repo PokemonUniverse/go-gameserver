@@ -15,9 +15,9 @@ import (
 )
 
 type Player struct {
-	Creature // base
+	Creature     // base
 	PlayerEntity *entities.Player
-	
+
 	dbConn *hood.Hood
 	rxChan <-chan pnet.INetMessageReader
 	txChan chan<- pnet.INetMessageWriter
@@ -138,15 +138,15 @@ func (p *Player) loadPlayerPokemon() bool {
 		log.Error("Player", "laodPlayerPokemon", "Failed to load pokemon for player (%d). %s", p.GetPlayerId(), err.Error())
 		return false
 	}
-	
+
 	p.pokemon = make(map[int64]*PlayerPokemon)
-	for _, playerPokemonEntity := range(result) {
+	for _, playerPokemonEntity := range result {
 		playerPokemon := NewPlayerPokemon(p.dbConn, playerPokemonEntity)
 		p.pokemon[playerPokemon.GetPlayerPokemonId()] = playerPokemon
 	}
-	
+
 	// TODO: Maybe add extra check if pokemonList size is zero. But only if we assign a pokemon to the player when creating a character
-	
+
 	return true
 }
 

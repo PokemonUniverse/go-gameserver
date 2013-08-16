@@ -5,10 +5,10 @@ import (
 
 	"github.com/eaigner/hood"
 	_ "github.com/ziutek/mymysql/godrv"
-	
+
 	"github.com/PokemonUniverse/nonamelib/configuration"
 	"github.com/PokemonUniverse/nonamelib/log"
-	
+
 	"gameserver/config"
 )
 
@@ -23,6 +23,6 @@ func CreateDatabaseConnection() *hood.Hood {
 		log.Error("DatabaseHelper", "CreateDatabaseConnection", "Unable to connect to database scheme '%s' with supplied credentials '%s'.\nError: %s", scheme, username, err.Error())
 		return nil
 	}
-	
+
 	return hd
 }
